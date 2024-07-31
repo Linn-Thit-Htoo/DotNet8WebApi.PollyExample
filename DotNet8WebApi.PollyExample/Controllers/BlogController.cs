@@ -19,10 +19,13 @@ public class BlogController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetBlogs()
     {
-        var policy = Policy.Handle<Exception>()
+        var policy = Policy
+            .Handle<Exception>()
             .WaitAndRetryAsync(3, attempt => TimeSpan.FromMicroseconds(1000 * attempt));
 
-        var lst = await policy.ExecuteAsync(() => _context.Tbl_Blogs.AsNoTracking().OrderByDescending(x => x.BlogId).ToListAsync());
+        var lst = await policy.ExecuteAsync(
+            () => _context.Tbl_Blogs.AsNoTracking().OrderByDescending(x => x.BlogId).ToListAsync()
+        );
         return Ok(lst);
     }
 }
