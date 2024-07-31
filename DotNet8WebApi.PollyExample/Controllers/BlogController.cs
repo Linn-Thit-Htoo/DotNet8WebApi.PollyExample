@@ -1,31 +1,28 @@
 ﻿using DotNet8WebApi.PollyExample.Db;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Polly;
-using Polly.Retry;
 
-namespace DotNet8WebApi.PollyExample.Controllers
+namespace DotNet8WebApi.PollyExample.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class BlogController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class BlogController : ControllerBase
+    private readonly AppDbContext _context;
+
+    public BlogController(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public BlogController(AppDbContext context)
-        {
-            _context = context;
-        }
+    [HttpGet]
+    public async Task<IActionResult> GetBlogs()
+    {
+        var policy = Policy.Handle<Exception>()
+            .WaitAndRetryAsync(3, attempt => TimeSpan.FromMicroseconds(1000 * attempt));
 
-        [HttpGet]
-        public async Task<IActionResult> GetBlogs()
-        {
-            var policy = Policy.Handle<Exception>()
-                .WaitAndRetryAsync(3, attempt => TimeSpan.FromMicroseconds(1000 * attempt));
-
-            var lst = await policy.ExecuteAsync(() => _context.Tbl_Blogs.AsNoTracking().OrderByDescending(x => x.BlogId).ToListAsync());
-            return Ok(lst);
-        }
+        var lst = await policy.ExecuteAsync(() => _context.Tbl_Blogs.AsNoTracking().OrderByDescending(x => x.BlogId).ToListAsync());
+        return Ok(lst);
     }
 }
